@@ -1,0 +1,14 @@
+[Unit]
+Description=FYQST version/manifest server (C++, replaces the node versionApp on :9902)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/opt/fyweb/fyversion /opt/fyweb/fyversion.conf
+Restart=always
+RestartSec=2
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

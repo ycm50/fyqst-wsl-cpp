@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" name="viewport">
+    <meta content="yes" name="apple-mobile-web-app-capable">
+    <meta content="black" name="apple-mobile-web-app-status-bar-style">
+    <meta content="telephone=no" name="format-detection">
+    <meta content="email=no" name="format-detection">
+	<link rel="stylesheet" href="css/bootstrap.min.css">
+	<script src="js/bootstrap.min.js"></script>
+	<title>绯雨骑士团CDK平台</title>
+</head>
+<body>
+<div class="text-center col-md-4 center-block">
+<h3>绯雨骑士团CDK平台</h3>
+ <div class="form-group">
+ <h4 style="color:blue">{{session_user}}</h4><br>
+ <form id="form" name="form" method="post" action="">
+  <div class="text-left">
+     <div  class="alert alert-info">
+	<strong>订单号：</strong>{{orderId}} <br>
+	<strong>充值支付：</strong>{{fee}}元
+	</div>
+	<div  class="alert alert-info">
+	此套餐赠送包含：{{czitem}}
+	  </div>
+	   <label style="color:blue" > 请支付方式 ：</label>
+	  <div class="radio" >	<h3 style="color:green">
+
+	  </h3>
+  </div>
+	<button type="submit" class="btn btn-info btn-block" name="submit" value="buy">购买密卡</button><br>
+</form>
+ <form id="form1" name="form1" method="post" action="">
+  <div class="text-left">
+     <div  class="alert alert-info">
+	 <label for="v">激活区</label>
+ <input type="text" placeholder="输入卡密" class="form-control" id="cdkey" name="cdkey" value=""><br>
+  </div>
+	<button type="submit" class="btn btn-info btn-block" name="submit" value="key">检查激活码</button><br>
+</form>
+</body>
+</div></div>
+</html>

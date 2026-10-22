@@ -1,0 +1,14 @@
+[Unit]
+Description=FYQST log sink (C++, replaces the node logApp on :7000)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/opt/fyweb/fylog /opt/fyweb/fylog.conf
+Restart=always
+RestartSec=2
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

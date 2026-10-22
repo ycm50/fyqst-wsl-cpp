@@ -1,0 +1,11 @@
+# Windows 批处理必须是 CRLF，否则 cmd.exe 解析报错
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Shell 脚本保持 LF
+*.sh text eol=lf
+
+# 二进制
+*.node binary
+*.png binary
+*.jpg binary

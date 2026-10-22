@@ -1,0 +1,15 @@
+[Unit]
+Description=FYQST web tier (C++ replacement for the PHP layer)
+After=network-online.target mariadb.service
+Wants=network-online.target
+Requires=mariadb.service
+
+[Service]
+Type=simple
+ExecStart=/opt/fyweb/fyweb /opt/fyweb/fyweb.conf
+Restart=always
+RestartSec=2
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

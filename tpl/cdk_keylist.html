@@ -1,0 +1,34 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>CDK管理系统 - {{title}}</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+	<script src="js/bootstrap.min.js"></script>
+</head>
+<body>
+<div class="text-center col-md-4 center-block">
+<h1>{{gmbt}}授权后台</h1>
+ <h3 style="color:blue">{{name}} 欢迎登陆</h3> <br>
+	<button class="btn btn-info btn-block" onclick="window.location.href='gmkey.php'">CDKEY管理</button>
+	<button class="btn btn-info btn-block" onclick="window.location.href='gmallkeylist.php?page=1'">CDKEY所有列表</button>
+	<button class="btn btn-info btn-block" onclick="window.location.href='gmkeylist.php?page=1'">CDKEY未使用列表</button>
+	<button class="btn btn-info btn-block" onclick="window.location.href='gm.php'">返回主菜单</button>
+	<button class="btn btn-info btn-block" onclick="window.location.href='exit.php'">登陆注销</button>	<br>
+	 <div class="form-group">
+	<label for="v">{{title}}（共 {{total}} 条）</label><br>
+  	 <table style="width: 100%; height: 200px ;overflow: auto;word-break: break-all; resize: none;" class="table table-bordered" border='1' width="40%">
+	 <tr><th style='text-align: center;'>序号</th><th style='text-align: center;'>cdkey</th><th style='text-align: center;'>权限</th><th style='text-align: center;'>状态</th><th style='text-align: center;'>绑定区</th><th style='text-align: center;'>绑定账号</th><th style='text-align: center;'>账号开通时间</th><th style='text-align: center;'>复制</th></tr>
+{{rows}}
+     </table>
+	 <table class="table">
+{{pager}}
+	 </table>
+  <p class="admin_copyright">&copy; 2019 Powered by  {{copyright}}</p>
+  </div>
+ </div>
+</body>
+</html>

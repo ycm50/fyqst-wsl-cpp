@@ -1,0 +1,38 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>CDK复制</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+	<link rel="stylesheet" href="css/bootstrap-theme.min.css">
+	<script src="js/bootstrap.min.js"></script>
+	<script>
+    function myCopy(){
+        var ele = document.getElementById("getkey");
+        ele.select();
+        document.execCommand("Copy");
+    }
+</script>
+</head>
+<body>
+<div class="text-center col-md-4 center-block">
+<h1>{{gmbt}}授权后台</h1>
+ <h3 style="color:blue">{{name}} 欢迎登陆</h3> <br>
+	 <button class="btn btn-info btn-block" onclick="window.location.href='gmkey.php'">CDKEY管理</button>
+	 <button class="btn btn-info btn-block" onclick="window.location.href='gmallkeylist.php?page=1'">CDKEY所有列表</button>
+	 <button class="btn btn-info btn-block" onclick="window.location.href='gmkeylist.php?page=1'">CDKEY未使用列表</button>
+	<button class="btn btn-info btn-block" onclick="window.location.href='gm.php'">返回主菜单</button>
+	<button class="btn btn-info btn-block" onclick="window.location.href='exit.php'">登陆注销</button><br>
+<form id="form" name="form" method="post" action="">
+    <div class="form-group">
+        <textarea type="text" class="form-control" id="getkey" name="getkey" value="">{{getkey}}</textarea>
+		  <button  class="btn btn-info btn-block" onclick="myCopy()" value="">点击复制</button><br>
+		</div>
+</form>
+<div class="form-group">
+  <p class="admin_copyright">&copy; 2019 Powered by  {{copyright}}</p>  </div>
+</body>
+</html>

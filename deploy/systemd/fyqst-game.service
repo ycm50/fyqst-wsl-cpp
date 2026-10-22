@@ -1,0 +1,19 @@
+[Unit]
+Description=FYQST game servers (pomelo / Node 6.9.5)
+After=network-online.target mariadb.service fyqst-ip.service
+Wants=network-online.target
+Requires=mariadb.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+Environment=PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/sbin:/bin
+WorkingDirectory=/Server
+ExecStart=/bin/bash /Server/s.sh
+ExecStop=/bin/bash /Server/t.sh
+TimeoutStartSec=120
+TimeoutStopSec=60
+KillMode=control-group
+
+[Install]
+WantedBy=multi-user.target

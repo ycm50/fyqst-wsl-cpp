@@ -1,0 +1,14 @@
+[Unit]
+Description=FYQST: refresh server IP (WSL 每次启动 IP 可能变化)
+After=mariadb.service
+Requires=mariadb.service
+Before=fyqst-game.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+Environment=PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/sbin:/bin
+ExecStart=/bin/bash -c 'IP=$(hostname -I | awk "{print \\$1}"); /Server/setip.sh $IP'
+
+[Install]
+WantedBy=multi-user.target

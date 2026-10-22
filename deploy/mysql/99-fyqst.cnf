@@ -1,0 +1,13 @@
+[mysqld]
+# 绯雨骑士团 / fyqst 兼容配置（对应教程中宝塔 MySQL 5.6 的设置）
+lower_case_table_names = 1
+sql_mode = ""
+character-set-server = utf8mb4
+collation-server = utf8mb4_general_ci
+skip-name-resolve
+max_connections = 500
+wait_timeout = 28800
+interactive_timeout = 28800
+
+[client]
+default-character-set = utf8mb4
