@@ -180,7 +180,9 @@ mkdir -p /www/_php_orig
 ( cd "$WWW_DIR" && find . -name '*.php' -print0 2>/dev/null | while IFS= read -r -d '' f; do
       mkdir -p "/www/_php_orig/$(dirname "$f")"; mv "$f" "/www/_php_orig/$f" 2>/dev/null
   done )
-rm -rf "$WWW_DIR/vp000" 2>/dev/null && mv "$WWW_DIR/vp000" /www/_php_orig/ 2>/dev/null
+if [ -d "$WWW_DIR/vp000" ]; then
+    mv "$WWW_DIR/vp000" /www/_php_orig/ 2>/dev/null || rm -rf "$WWW_DIR/vp000"
+fi
 
 # ---------------------------------------------------------------- 7. 启动脚本 / IP
 say "安装 IP 刷新与启动脚本 ..."
