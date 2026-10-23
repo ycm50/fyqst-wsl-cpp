@@ -1,49 +1,33 @@
 #!/bin/bash
+# 停止全部 Node 服（与 s.sh 配套）
 
-# 停止Node.js应用程序
 stop_node_app() {
     app_name="$1"
     app_pid=$(pgrep -f "node $app_name.js")
-
     if [ -n "$app_pid" ]; then
-        kill $app_pid
+        kill $app_pid 2>/dev/null
         echo "Stopped $app_name (PID: $app_pid)"
     else
         echo "$app_name is not running"
     fi
 }
 
-# 停止mainApp
+# 合并进程：mainApp(9901) + viewApp(9903)
+stop_node_app "allApp"
+
+# 兼容旧版单进程启动的情况
 stop_node_app "mainApp"
-
-# 停止versionApp
-stop_node_app "versionApp"
-
-# 停止viewApp
 stop_node_app "viewApp"
-
-# 切换到s1目录
-cd /Server/s1
-
-# 停止serverApp
-stop_node_app "serverApp"
-
-# 停止logApp
+stop_node_app "versionApp"
 stop_node_app "logApp"
 
-# 切换到wserver目录
-cd /Server/uc/wserver
+cd /Server/s1 2>/dev/null || exit 0
+stop_node_app "serverApp"
 
-# 停止cityserver
+cd /Server/s1/wserver 2>/dev/null || exit 0
 stop_node_app "cityserver"
 
-# 切换到battleserver目录
-cd /Server/uc/battleserver
-
-# 停止battleserver
+cd /Server/s1/battleserver 2>/dev/null || exit 0
 stop_node_app "battleserver"
 
-# 可以继续添加其他Node.js应用程序的停止命令，按照相同的方式
-
-# 输出操作完成消息
 echo "All Node.js services stopped"

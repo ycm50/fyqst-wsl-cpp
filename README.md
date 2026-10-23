@@ -76,12 +76,16 @@ SKIP_APT=1                             # 依赖已装好
 | 9500 | 登录/GM/CDK 后端 | **C++ `fyweb`** | 替代 `game.php` / `pay.php` / `cdkmail.php` / `gm/*` / `cdk/*` |
 | 9902 | 版本清单 | **C++ `fyversion`** | 替代 `versionApp.js`，输出与原版**逐字节一致** |
 | 7000 | 客户端日志收集 | **C++ `fylog`** | 替代 `logApp.js` |
-| 9901 | 主登录/路由 | node mainApp | 游戏逻辑本体 |
-| 9903 | 支付回调/渠道视图 | node viewApp | 本部署实测**零请求**，见「已知限制」 |
+| 9901 | 主登录/路由 | node **allApp** | 与 9903 合并为一个进程 |
+| 9903 | 支付回调/渠道视图 | node **allApp** | 与 9901 同进程，共享 uw-data |
 | 10001 | 主城服 | node cityserver | |
 | 20001 | 游戏服 | node serverApp | |
 | 9001 | 战斗服 | node battleserver | |
 | 3306 | MariaDB | | |
+
+> **进程合并**：每个 Node 进程都会把同一份 `uw-data`（游戏配置数据，实测 **315 MB**）加载一遍。
+> `mainApp(9901)` 与 `viewApp(9903)` 已合并为单个 `allApp.js` 进程，两者共享一份数据：
+> **563.5 MB → 277.6 MB，省 286 MB**（见第 10 节）。
 
 **高频计算 C++ 化**：`native/fynative.cpp` 编译成 `fynative.node`（Node 6 原生插件，
 直接用 node 头文件编译，**不需要 node-gyp / python2**），接入：
@@ -158,26 +162,76 @@ bash deploy/scripts/test_web.sh       # Web 层 29 项接口自测
 │   ├── nginx-fyqst.conf
 │   ├── mysql/                 MariaDB 兼容配置 + root 初始化
 │   ├── systemd/               5 个单元
-│   ├── scripts/               setip / s.sh / t.sh / fix_ports / 自测
+│   ├── allApp.js              进程合并启动器（mainApp+viewApp）
+│   ├── scripts/               setip / s.sh / t.sh / fix_ports / apply_merge / 自测
 │   └── start_fyqst.cmd        Windows 一键启动
 └── docs/                      部署记录与踩坑
 ```
 
 ---
 
-## 8. 已知限制
+## 8. 进程合并（省 286 MB）★
 
-1. `viewApp(9903)` 仍是 Node（约 285 MB）。部署实测其请求日志**为空**（游戏全程未调用），
-   但为保证兼容暂未下线；确认后可 `systemctl stop` 并把它从 `s.sh` 移除再省 285 MB。
-2. 5 个 Node 进程（mainApp/viewApp/serverApp/cityserver/battleserver）是 pomelo 游戏逻辑本体，
-   无法用 C++ 替换而不重写游戏。
+### 为什么
+
+实测单个 Node 进程的内存构成：
+
+| 加载内容 | RSS |
+|---|---|
+| 裸 node 6 | 25.4 MB |
+| + express / body-parser | 33.8 MB |
+| + uw-db（连库） | 34.0 MB |
+| **+ uw-data（游戏配置数据）** | **315.3 MB** |
+
+也就是说每个进程 ~280 MB 里约 **290 MB 是同一份游戏数据**。5 个进程 = 5 份副本。
+
+### 怎么做
+
+`deploy/allApp.js` 只是一个启动器，把两个 app 加载进同一个进程：
+
+```js
+require('./mainApp.js');   // 9901 主登录/路由
+require('./viewApp.js');   // 9903 支付回调/渠道视图
+```
+
+成立的前提（本项目已具备）：
+
+1. 两个 app 各自 `reset.createApp()` 监听自己的端口，互不干扰；
+2. `uc` / `s1` 的 `env-cfg/*.js` 已打「端口兜底」补丁，任何一次 reset 写出的
+   `config/project.json` 都是完整端口表，`uw-config` 的缓存对两个 app 都正确；
+3. 两者同在 `/Server/uc`，`reset.js` 用 `__dirname` 定位，配置目录一致。
+
+### 效果
+
+| 指标 | 合并前 | 合并后 |
+|---|---|---|
+| Node 进程数 | 5 | **4** |
+| mainApp + viewApp 占用 | 283.3 + 280.2 = **563.5 MB** | **277.6 MB**（单进程） |
+| Node 总占用 | 1413.8 MB | **1134.7 MB** |
+
+验收：9901 返回 JSON 12900 字节（登录/区服接口正常）、9903 `/pay/index.html` 200、
+10 个业务端口全部监听、Web/GM/CDK/manifest 全 200。
+
+### 还能继续合并吗
+
+`serverApp`(20001)、`cityserver`(10001)、`battleserver`(9001) 也可以同样的方式合并，
+理论上再省 **约 560 MB**（每个进程约 280 MB），但它们是游戏逻辑本体（定时器、世界 Boss、
+排行刷新、DB 连接池、全局单例），需要完整回归测试后再动。
+
+---
+
+## 9. 已知限制
+
+1. `serverApp` / `cityserver` / `battleserver` 仍是独立 Node 进程（各约 280 MB），
+   尚未合并；合并方案与风险评估见第 8 节末尾。
+2. 3 个游戏进程是 pomelo 游戏逻辑本体，无法用 C++ 替换而不重写游戏。
 3. 原 `vp000`（第三方运营后台，整站 PHP）已移出 web 根目录，未做 C++ 化。
 4. 每请求的 JSON.parse/stringify 未替换：需要把 C++ JSON 塞进 300 KB 业务代码的每条消息路径，
    风险/收益不划算。
 
 ---
 
-## 9. 许可
+## 10. 许可
 
 * 本仓库的 C++ 代码、脚本、文档：MIT
 * `src/httplib.h`：cpp-httplib（MIT）
