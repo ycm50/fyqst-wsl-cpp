@@ -12,22 +12,17 @@ stop_node_app() {
     fi
 }
 
-# 合并进程：mainApp(9901) + viewApp(9903)
-stop_node_app "allApp"
+# 合并进程
+stop_node_app "allApp"      # mainApp(9901) + viewApp(9903)
+stop_node_app "gameAll"     # cityserver(10001) + battleserver(9001)
 
 # 兼容旧版单进程启动的情况
 stop_node_app "mainApp"
 stop_node_app "viewApp"
+stop_node_app "serverApp"
+stop_node_app "cityserver"
+stop_node_app "battleserver"
 stop_node_app "versionApp"
 stop_node_app "logApp"
-
-cd /Server/s1 2>/dev/null || exit 0
-stop_node_app "serverApp"
-
-cd /Server/s1/wserver 2>/dev/null || exit 0
-stop_node_app "cityserver"
-
-cd /Server/s1/battleserver 2>/dev/null || exit 0
-stop_node_app "battleserver"
 
 echo "All Node.js services stopped"

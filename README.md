@@ -170,7 +170,7 @@ bash deploy/scripts/test_web.sh       # Web 层 29 项接口自测
 
 ---
 
-## 8. 进程合并（省 286 MB）★
+## 8. 进程合并（Node 5 → 3 进程，省 567 MB）★
 
 ### 为什么
 
@@ -187,44 +187,64 @@ bash deploy/scripts/test_web.sh       # Web 层 29 项接口自测
 
 ### 怎么做
 
-`deploy/allApp.js` 只是一个启动器，把两个 app 加载进同一个进程：
+两个启动器，把「同职责」的服务合并进同一进程，共享那一份 uw-data：
+
+`deploy/allApp.js`
 
 ```js
 require('./mainApp.js');   // 9901 主登录/路由
 require('./viewApp.js');   // 9903 支付回调/渠道视图
 ```
 
+`deploy/gameAll.js`
+
+```js
+process.chdir('/Server/s1/wserver');
+require('/Server/s1/wserver/cityserver.js');    // 10001 主城
+
+var proj = require('/Server/s1/node_modules/uw-config').project;
+proj.battleId = 1;                              // battleserver 需要
+proj.battleServerPort = 9001;
+
+process.chdir('/Server/s1/battleserver');
+require('/Server/s1/battleserver/battleserver.js');  // 9001 战斗
+```
+
 成立的前提（本项目已具备）：
 
-1. 两个 app 各自 `reset.createApp()` 监听自己的端口，互不干扰；
-2. `uc` / `s1` 的 `env-cfg/*.js` 已打「端口兜底」补丁，任何一次 reset 写出的
-   `config/project.json` 都是完整端口表，`uw-config` 的缓存对两个 app 都正确；
-3. 两者同在 `/Server/uc`，`reset.js` 用 `__dirname` 定位，配置目录一致。
+1. 各 app 用 `reset.createApp()` 监听自己的端口，互不干扰；
+2. `env-cfg/*.js` 已打「端口兜底」补丁，任何一次 reset 写出的 `project.json` 都是完整端口表，
+   `uw-config` 的缓存对同进程内所有 app 都正确；
+3. **city/battle 用 `fs.walkDirSync('./handlers')`，路径相对进程 cwd**，所以必须在各自
+   `require` 前 `chdir`（上面代码里的两处切换就是为此）。
 
-### 效果
+### 效果（实测）
 
 | 指标 | 合并前 | 合并后 |
 |---|---|---|
-| Node 进程数 | 5 | **4** |
-| mainApp + viewApp 占用 | 283.3 + 280.2 = **563.5 MB** | **277.6 MB**（单进程） |
-| Node 总占用 | 1413.8 MB | **1134.7 MB** |
+| Node 进程数 | **5** | **3** |
+| mainApp + viewApp | 283.3 + 280.2 = 563.5 MB | **279.9 MB**（allApp） |
+| cityserver + battleserver | 282.1 + 282.0 = 564.1 MB | **282.9 MB**（gameAll） |
+| serverApp | 286.2 MB | 284.2 MB |
+| **node 合计** | **1413.8 MB** | **847.0 MB（−567 MB，−40%）** |
+| 系统 used | ~2000 MB | **1531 MB** |
 
-验收：9901 返回 JSON 12900 字节（登录/区服接口正常）、9903 `/pay/index.html` 200、
-10 个业务端口全部监听、Web/GM/CDK/manifest 全 200。
+验收：10 个业务端口全监听；首页 / game.html / GM / CDK / manifest / 9901 登录接口
+（JSON 12900 字节）/ 9903 `/pay/index.html` 全 200；日志出现
+`city listening on *:10001`、`server listening on *:9001`、`start server finish! listen 20001`。
 
 ### 还能继续合并吗
 
-`serverApp`(20001)、`cityserver`(10001)、`battleserver`(9001) 也可以同样的方式合并，
-理论上再省 **约 560 MB**（每个进程约 280 MB），但它们是游戏逻辑本体（定时器、世界 Boss、
-排行刷新、DB 连接池、全局单例），需要完整回归测试后再动。
+把 `serverApp`(20001) 也合进 `allApp` 或 `gameAll`，还能再省约 **283 MB**（→ 2 进程 ≈ 566 MB）。
+但它涉及 `cluster` 判断、`sessionManager` 初始化、`g_common.appIsHttp` 全局开关、`SIGINT/SIGUSR`
+停服钩子，且是玩家请求主入口（与后台计算同进程会抢事件循环），**需完整回归测试后再动**。
 
 ---
 
 ## 9. 已知限制
 
-1. `serverApp` / `cityserver` / `battleserver` 仍是独立 Node 进程（各约 280 MB），
-   尚未合并；合并方案与风险评估见第 8 节末尾。
-2. 3 个游戏进程是 pomelo 游戏逻辑本体，无法用 C++ 替换而不重写游戏。
+1. `serverApp`(20001) 仍是独立 Node 进程（约 284 MB），未合并；风险见第 8 节末尾。
+2. 3 个 Node 进程是 pomelo 游戏逻辑本体，无法用 C++ 替换而不重写游戏。
 3. 原 `vp000`（第三方运营后台，整站 PHP）已移出 web 根目录，未做 C++ 化。
 4. 每请求的 JSON.parse/stringify 未替换：需要把 C++ JSON 塞进 300 KB 业务代码的每条消息路径，
    风险/收益不划算。
