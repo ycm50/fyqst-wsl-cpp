@@ -1,6 +1,8 @@
 # fyweb - C++ 版绯雨骑士团 Web 层 + 辅助服务 + Node 原生插件
 CXX      ?= g++
-CPPFLAGS ?= -I/usr/include/mariadb
+# 必须开 TCP_NODELAY：否则 keep-alive 下响应会撞上 TCP delayed-ACK，
+# 实测每请求多 40ms，吞吐从 19000 req/s 掉到 1100 req/s
+CPPFLAGS ?= -I/usr/include/mariadb -DCPPHTTPLIB_TCP_NODELAY=1
 CXXFLAGS ?= -O2 -std=c++17 -Wall -Wextra -Wno-unused-parameter -pthread
 LDFLAGS  ?= -pthread
 LIBS     ?= -lmariadb

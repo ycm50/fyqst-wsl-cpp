@@ -1,6 +1,7 @@
 // fyversion - C++ 版 versionApp（9902）：/manifest /bi /log /guidelog
 // 替代原 Node 版 versionApp.js（省下一个 Node 进程 ~284MB）
 #include "json.h"
+#include "logbuf.h"
 
 #include <string>
 #include <vector>
@@ -22,6 +23,11 @@ static std::string g_versionsDir = "/Server/uc/versions";
 static int         g_port        = 9902;
 static std::string g_listenAddr  = "0.0.0.0";
 static std::string g_logDir      = "/Server/startlog";
+
+// 访问日志走缓冲（热路径禁止每请求 fopen）
+static LogBuf g_accessLog("/Server/startlog/version_access.log", 200, 1);
+static LogBuf g_biLog("/Server/startlog/bi.log", 200, 1);
+static LogBuf g_clientLog("/Server/startlog/client_log.log", 200, 1);
 
 // ---------------------------------------------------------------- 工具
 static std::string readfile(const std::string &p) {
@@ -193,13 +199,13 @@ int main(int argc, char **argv) {
     });
 
     // 请求日志：便于排查客户端加载卡住时到底在要什么
+    // 注意：这里是热路径，必须用缓冲写盘（每请求 fopen/fwrite/fclose 实测约 40ms，
+    // 会把 /manifest 的吞吐从数万 req/s 压到 ~1.1k req/s）
     svr.set_post_routing_handler([](const httplib::Request &req, httplib::Response &res) {
-        appendfile(g_logDir + "/version_access.log",
-                   nowstr() + "\t" + req.remote_addr + "\t" + std::to_string(res.status) + "\t" +
-                       req.path + (req.target.size() > req.path.size()
-                                       ? req.target.substr(req.path.size())
-                                       : std::string()) +
-                       "\n");
+        g_accessLog.add(req.remote_addr + "\t" + std::to_string(res.status) + "\t" + req.path +
+                        (req.target.size() > req.path.size() ? req.target.substr(req.path.size())
+                                                             : std::string()) +
+                        "\n");
     });
 
     svr.Get("/manifest", [](const httplib::Request &, httplib::Response &res) {
@@ -213,12 +219,12 @@ int main(int argc, char **argv) {
                                 ? req.get_header_value("X-Forwarded-For")
                                 : req.remote_addr) +
                            "\n";
-        appendfile(g_logDir + "/bi.log", line);
+        g_biLog.add(line);
         res.set_content("", "text/plain");
     });
 
     svr.Get("/log", [](const httplib::Request &req, httplib::Response &res) {
-        appendfile(g_logDir + "/client_log.log", nowstr() + "\t" + req.target + "\n");
+        g_clientLog.add(nowstr() + "\t" + req.target + "\n");
         res.set_content("", "text/plain");
     });
 
